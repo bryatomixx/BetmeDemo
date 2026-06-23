@@ -1,0 +1,89 @@
+// Modelos de dominio del Centro de Comunicación.
+// Una sola fuente de verdad para canales, estados, roles y entidades.
+
+export type Channel = "whatsapp" | "instagram" | "facebook" | "internal";
+
+export type ConversationStatus = "nuevo" | "en_progreso" | "resuelto";
+
+export type DepartmentId =
+  | "ginecologia"
+  | "obstetricia"
+  | "pediatria"
+  | "reproduccion"
+  | "laboratorio"
+  | "imagenes"
+  | "recepcion";
+
+export type RoleId = "recepcion" | "medico" | "jefe" | "admin";
+
+export interface Department {
+  id: DepartmentId;
+  nombre: string;
+  color: string; // hex para chips/barras
+}
+
+export interface StaffUser {
+  id: string;
+  nombre: string;
+  rol: RoleId;
+  departamento: DepartmentId;
+  iniciales: string;
+}
+
+export interface Contact {
+  id: string;
+  nombre: string;
+  telefono?: string;
+  handle?: string; // @usuario en redes
+  canal: Channel;
+  notas?: string;
+}
+
+export interface Message {
+  id: string;
+  conversationId: string;
+  autor: "paciente" | "staff";
+  staffId?: string;
+  texto: string;
+  ts: string; // ISO 8601
+}
+
+export interface Conversation {
+  id: string;
+  canal: Channel;
+  contactId: string;
+  departamento: DepartmentId;
+  estado: ConversationStatus;
+  asignadoA?: string; // StaffUser.id
+  noLeidos: number;
+  ultimoMensajeTs: string; // ISO 8601
+}
+
+export interface InternalChannel {
+  id: string;
+  nombre: string;
+  tipo: "canal" | "dm";
+  miembros: string[]; // StaffUser.id[]
+}
+
+export interface InternalMessage {
+  id: string;
+  channelId: string;
+  staffId: string;
+  texto: string;
+  ts: string; // ISO 8601
+}
+
+export interface SocialPost {
+  id: string;
+  red: "facebook" | "instagram";
+  estado: "publicado" | "programado" | "borrador";
+  texto: string;
+  fecha: string; // ISO 8601
+}
+
+export interface Metric {
+  label: string;
+  valor: string | number;
+  delta?: number; // variación porcentual, positiva o negativa
+}
