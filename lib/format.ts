@@ -41,3 +41,14 @@ export function inicialesStaff(id?: string): string {
 export function depto(id: DepartmentId) {
   return deptById.get(id)!;
 }
+
+// Metadatos de un miembro del staff para chat interno (nombre, iniciales, color).
+export function staffMeta(id: string) {
+  const s = staffById.get(id);
+  if (!s) return { nombre: "Desconocido", iniciales: "?", color: "#64748b" };
+  return {
+    nombre: s.nombre,
+    iniciales: s.iniciales,
+    color: deptById.get(s.departamento)?.color ?? "#64748b",
+  };
+}
