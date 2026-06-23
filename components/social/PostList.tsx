@@ -1,6 +1,16 @@
-import { CalendarClock, CheckCircle2, FileText } from "lucide-react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  FileText,
+  Radar,
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
+} from "lucide-react";
 import { ChannelBadge } from "@/components/ui/ChannelBadge";
-import type { SocialPost } from "@/lib/data/types";
+import { compacto } from "@/lib/format";
+import type { PostEngagement, SocialPost } from "@/lib/data/types";
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -41,6 +51,7 @@ export function PostList({ posts }: { posts: SocialPost[] }) {
                     <span className="text-[11.5px] text-[#94a3b4]">{fechaPost(p.fecha)}</span>
                   </div>
                   <p className="text-[13.5px] leading-relaxed text-[#33425a]">{p.texto}</p>
+                  {p.engagement && <Engagement e={p.engagement} />}
                 </article>
               ))}
             </div>
@@ -48,5 +59,36 @@ export function PostList({ posts }: { posts: SocialPost[] }) {
         );
       })}
     </div>
+  );
+}
+
+function Engagement({ e }: { e: PostEngagement }) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 border-t border-line pt-2.5 text-[12px] text-[#5b6b80]">
+      <Stat Icon={Radar} valor={compacto(e.alcance)} titulo="Alcance" />
+      <Stat Icon={Heart} valor={compacto(e.meGusta)} titulo="Me gusta / reacciones" />
+      <Stat Icon={MessageCircle} valor={compacto(e.comentarios)} titulo="Comentarios" />
+      <Stat Icon={Share2} valor={compacto(e.compartidos)} titulo="Compartidos" />
+      {e.guardados !== undefined && (
+        <Stat Icon={Bookmark} valor={compacto(e.guardados)} titulo="Guardados" />
+      )}
+    </div>
+  );
+}
+
+function Stat({
+  Icon,
+  valor,
+  titulo,
+}: {
+  Icon: typeof Radar;
+  valor: string;
+  titulo: string;
+}) {
+  return (
+    <span className="flex items-center gap-1" title={titulo}>
+      <Icon size={13} className="text-[#94a3b4]" />
+      <span className="font-semibold text-[#33425a]">{valor}</span>
+    </span>
   );
 }

@@ -17,6 +17,7 @@ import type {
   Message,
   Metric,
   SocialPost,
+  SocialStats,
 } from "./data/types";
 
 export interface StoreState {
@@ -26,6 +27,7 @@ export interface StoreState {
   internalChannels: InternalChannel[];
   internalMessages: InternalMessage[];
   socialPosts: SocialPost[];
+  socialStats: SocialStats[];
   metrics: Metric[];
   tsSeq: number;
   idSeq: number;
@@ -65,6 +67,7 @@ export function createInitialState(): StoreState {
       .listInternalChannels()
       .flatMap((c) => fakeProvider.getInternalMessages(c.id)),
     socialPosts: fakeProvider.listSocialPosts(),
+    socialStats: fakeProvider.getSocialStats(),
     metrics: fakeProvider.getMetrics(),
     tsSeq: 1,
     idSeq: 1,

@@ -10,6 +10,7 @@ import type {
   Message,
   Metric,
   SocialPost,
+  SocialStats,
   StaffUser,
 } from "./types";
 
@@ -159,11 +160,35 @@ export const internalMessages: InternalMessage[] = [
 ];
 
 export const socialPosts: SocialPost[] = [
-  { id: "sp1", red: "instagram", estado: "publicado", texto: "Tu salud y la de tu bebé en las mejores manos. Agenda tu control prenatal con nuestras especialistas. Somos parte de tu vida.", fecha: "2026-06-22T09:00:00" },
-  { id: "sp2", red: "facebook", estado: "publicado", texto: "Contamos con emergencias ginecológicas y pediátricas las 24 horas del día. Tu tranquilidad es nuestra prioridad.", fecha: "2026-06-21T15:00:00" },
+  { id: "sp1", red: "instagram", estado: "publicado", texto: "Tu salud y la de tu bebé en las mejores manos. Agenda tu control prenatal con nuestras especialistas. Somos parte de tu vida.", fecha: "2026-06-22T09:00:00", engagement: { alcance: 8420, meGusta: 612, comentarios: 38, compartidos: 47, guardados: 121 } },
+  { id: "sp2", red: "facebook", estado: "publicado", texto: "Contamos con emergencias ginecológicas y pediátricas las 24 horas del día. Tu tranquilidad es nuestra prioridad.", fecha: "2026-06-21T15:00:00", engagement: { alcance: 11200, meGusta: 540, comentarios: 64, compartidos: 132 } },
   { id: "sp3", red: "instagram", estado: "programado", texto: "Conoce nuestro Centro de Reproducción Asistida con tecnología de última generación. Agenda tu cita informativa.", fecha: "2026-06-24T10:00:00" },
   { id: "sp4", red: "facebook", estado: "programado", texto: "Jornada de ultrasonido 4D este fin de semana. Cupos limitados, reserva por mensaje directo.", fecha: "2026-06-25T08:00:00" },
   { id: "sp5", red: "instagram", estado: "borrador", texto: "5 señales de que es momento de visitar a tu ginecóloga. Te contamos en este carrusel.", fecha: "2026-06-23T12:00:00" },
+];
+
+// Estadísticas de cuenta (mock) con la forma que devuelve Meta Graph API Insights.
+export const socialStats: SocialStats[] = [
+  {
+    red: "instagram",
+    handle: "@hospitalcentroginecologico",
+    seguidores: 18420,
+    nuevosSeguidores: 574,
+    crecimientoPct: 3.2,
+    alcance30d: 42100,
+    vistas30d: 96300,
+    interacciones30d: 5840,
+  },
+  {
+    red: "facebook",
+    handle: "Hospital Centro Ginecológico",
+    seguidores: 31250,
+    nuevosSeguidores: 412,
+    crecimientoPct: 1.4,
+    alcance30d: 58700,
+    vistas30d: 121400,
+    interacciones30d: 7920,
+  },
 ];
 
 export const metrics: Metric[] = [

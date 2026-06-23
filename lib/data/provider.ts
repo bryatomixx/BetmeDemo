@@ -11,6 +11,7 @@ import {
   messages as seedMessages,
   metrics as seedMetrics,
   socialPosts as seedSocialPosts,
+  socialStats as seedSocialStats,
 } from "./seed";
 import type {
   Contact,
@@ -20,6 +21,7 @@ import type {
   Message,
   Metric,
   SocialPost,
+  SocialStats,
 } from "./types";
 
 export interface CommsProvider {
@@ -30,6 +32,7 @@ export interface CommsProvider {
   listInternalChannels(): InternalChannel[];
   getInternalMessages(channelId: string): InternalMessage[];
   listSocialPosts(): SocialPost[];
+  getSocialStats(): SocialStats[];
   getMetrics(): Metric[];
 }
 
@@ -44,6 +47,7 @@ export class FakeCommsProvider implements CommsProvider {
   private internalChannels: InternalChannel[];
   private internalMessages: InternalMessage[];
   private socialPosts: SocialPost[];
+  private socialStats: SocialStats[];
   private metrics: Metric[];
 
   constructor() {
@@ -55,6 +59,7 @@ export class FakeCommsProvider implements CommsProvider {
     this.internalChannels = clone(seedInternalChannels);
     this.internalMessages = clone(seedInternalMessages);
     this.socialPosts = clone(seedSocialPosts);
+    this.socialStats = clone(seedSocialStats);
     this.metrics = clone(seedMetrics);
   }
 
@@ -93,6 +98,10 @@ export class FakeCommsProvider implements CommsProvider {
 
   listSocialPosts(): SocialPost[] {
     return clone(this.socialPosts);
+  }
+
+  getSocialStats(): SocialStats[] {
+    return clone(this.socialStats);
   }
 
   getMetrics(): Metric[] {

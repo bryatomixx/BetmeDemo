@@ -3,6 +3,7 @@
 import { useStore } from "@/lib/store";
 import { PostComposer } from "@/components/social/PostComposer";
 import { PostList } from "@/components/social/PostList";
+import { SocialStats } from "@/components/social/SocialStats";
 
 export default function RedesPage() {
   const { state, dispatch } = useStore();
@@ -24,7 +25,10 @@ export default function RedesPage() {
             dispatch({ type: "ADD_SOCIAL_POST", red, texto, fecha })
           }
         />
-        <PostList posts={state.socialPosts} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <SocialStats stats={state.socialStats} />
+          <PostList posts={state.socialPosts} />
+        </div>
       </div>
     </div>
   );

@@ -25,6 +25,16 @@ export function diaRelativo(ts: string): string {
   return `${Number(dia)} ${MESES[Number(mes) - 1]}`;
 }
 
+// 8420 -> "8.4k", 121400 -> "121k", 1200000 -> "1.2M"
+export function compacto(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 1_000_000) {
+    const k = n / 1000;
+    return `${k < 100 ? k.toFixed(1) : Math.round(k)}k`;
+  }
+  return `${(n / 1_000_000).toFixed(1)}M`;
+}
+
 const staffById = new Map(staff.map((s) => [s.id, s]));
 const deptById = new Map(departments.map((d) => [d.id, d]));
 

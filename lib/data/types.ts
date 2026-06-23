@@ -74,12 +74,40 @@ export interface InternalMessage {
   ts: string; // ISO 8601
 }
 
+export type RedSocial = "facebook" | "instagram";
+
+// Métricas por publicación, equivalentes a las que devuelve la API:
+// IG media insights (reach, likes, comments, shares, saved) y
+// FB post insights (reach, reactions, comments, shares).
+export interface PostEngagement {
+  alcance: number; // reach
+  meGusta: number; // likes / reactions
+  comentarios: number; // comments
+  compartidos: number; // shares
+  guardados?: number; // saved (solo Instagram)
+}
+
 export interface SocialPost {
   id: string;
-  red: "facebook" | "instagram";
+  red: RedSocial;
   estado: "publicado" | "programado" | "borrador";
   texto: string;
   fecha: string; // ISO 8601
+  engagement?: PostEngagement; // presente en publicaciones ya publicadas
+}
+
+// Estadísticas a nivel de cuenta, equivalentes a Meta Graph API Insights.
+// IG: follower_count, reach, views, total_interactions.
+// FB: page_fans, page reach, views, page_post_engagements.
+export interface SocialStats {
+  red: RedSocial;
+  handle: string;
+  seguidores: number; // follower_count / page_fans
+  nuevosSeguidores: number; // crecimiento en 30 días
+  crecimientoPct: number; // variación porcentual de seguidores
+  alcance30d: number; // reach (30 días)
+  vistas30d: number; // views (30 días), reemplaza impressions
+  interacciones30d: number; // total_interactions / page_post_engagements
 }
 
 export interface Metric {
