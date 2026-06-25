@@ -1,14 +1,23 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { StoreProvider } from "@/lib/store";
 import { LiveProvider } from "@/lib/live-context";
 import { Sidebar } from "./Sidebar";
 import { LiveMount } from "./LiveMount";
 
+// Rutas públicas que NO llevan el chrome del dashboard (sidebar, store, etc.).
+const PUBLIC_ROUTES = ["/privacy"];
+
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [navOpen, setNavOpen] = useState(false);
+
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return <>{children}</>;
+  }
 
   return (
     <StoreProvider>
