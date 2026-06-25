@@ -103,9 +103,23 @@ export default function BandejaPage() {
               contact={contactoActivo}
               messages={mensajesActivos}
               esMia={activa.asignadoA === ME}
-              onSend={(texto) =>
-                dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME })
-              }
+              onSend={(texto) => {
+                // Optimista: lo mostramos de una en el hilo.
+                dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME });
+                // Si la conversación es de WhatsApp, lo enviamos de verdad por la Cloud API.
+                if (activa.canal === "whatsapp" && contactoActivo.telefono) {
+                  fetch("/api/whatsapp/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ to: contactoActivo.telefono, text: texto }),
+                  })
+                    .then((r) => r.json())
+                    .then((d) => {
+                      if (!d.ok) console.error("WhatsApp send falló:", d.error);
+                    })
+                    .catch((e) => console.error("WhatsApp send error:", e));
+                }
+              }}
               onAsignarme={() =>
                 dispatch({ type: "ASSIGN", conversationId: activa.id, staffId: ME })
               }

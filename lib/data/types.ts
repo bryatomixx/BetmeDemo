@@ -115,3 +115,29 @@ export interface Metric {
   valor: string | number;
   delta?: number; // variación porcentual, positiva o negativa
 }
+
+// --- Llamadas (Vapi) ---
+// Modelo de lectura, equivalente a lo que devuelve la API de Vapi (GET /call).
+export type CallDirection = "inbound" | "outbound" | "web";
+
+export interface CallRecord {
+  id: string;
+  direccion: CallDirection;
+  numeroCliente?: string; // customer.number
+  inicio?: string; // startedAt, ISO 8601
+  fin?: string; // endedAt, ISO 8601
+  duracionSeg: number; // derivado de inicio/fin
+  costo: number; // USD
+  estadoFinal?: string; // endedReason de Vapi
+  assistantId?: string;
+}
+
+export interface CallMetrics {
+  total: number;
+  entrantes: number;
+  salientes: number;
+  conectadas: number; // con duración > 0
+  minutosTotales: number;
+  duracionPromedioSeg: number;
+  costoTotal: number;
+}

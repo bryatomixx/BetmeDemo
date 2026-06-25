@@ -5,6 +5,7 @@ import { Clock, MessageSquare, CheckCircle2, Inbox } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { DeptBreakdown } from "@/components/dashboard/DeptBreakdown";
+import { CallsPanel } from "@/components/dashboard/CallsPanel";
 
 const ESTADOS = [
   { id: "nuevo", label: "Nuevos", color: "#0067f8" },
@@ -86,6 +87,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <CallsPanel />
       </div>
     </div>
   );

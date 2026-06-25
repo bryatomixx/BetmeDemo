@@ -41,7 +41,15 @@ export type StoreAction =
   | { type: "MARK_READ"; conversationId: string }
   | { type: "INCOMING"; conversationId: string; texto: string }
   | { type: "SEND_INTERNAL"; channelId: string; texto: string; staffId: string }
-  | { type: "ADD_SOCIAL_POST"; red: SocialPost["red"]; texto: string; fecha: string };
+  | { type: "ADD_SOCIAL_POST"; red: SocialPost["red"]; texto: string; fecha: string }
+  | {
+      type: "WHATSAPP_INCOMING";
+      waId: string;
+      from: string;
+      nombre?: string;
+      texto: string;
+      ts: string;
+    };
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -185,6 +193,83 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         socialPosts: [post, ...state.socialPosts],
         idSeq: state.idSeq + 1,
       };
+    }
+    case "WHATSAPP_INCOMING": {
+      // Dedup: si ya procesamos este id de WhatsApp, no hacemos nada.
+      if (state.messages.some((m) => m.id === action.waId)) return state;
+
+      const existente = state.contacts.find(
+        (c) => c.canal === "whatsapp" && c.telefono === action.from,
+      );
+
+      let contacts = state.contacts;
+      let conversations = state.conversations;
+      let conversationId: string;
+
+      if (existente) {
+        const conv = state.conversations.find(
+          (c) => c.canal === "whatsapp" && c.contactId === existente.id,
+        );
+        if (conv) {
+          conversationId = conv.id;
+          conversations = state.conversations.map((c) =>
+            c.id === conv.id
+              ? {
+                  ...c,
+                  ultimoMensajeTs: action.ts,
+                  noLeidos: c.noLeidos + 1,
+                  estado: c.estado === "resuelto" ? "en_progreso" : c.estado,
+                }
+              : c,
+          );
+        } else {
+          conversationId = `wac-${action.from}`;
+          conversations = [
+            {
+              id: conversationId,
+              canal: "whatsapp",
+              contactId: existente.id,
+              departamento: "recepcion",
+              estado: "nuevo",
+              noLeidos: 1,
+              ultimoMensajeTs: action.ts,
+            },
+            ...state.conversations,
+          ];
+        }
+      } else {
+        const contactId = `wa-${action.from}`;
+        const nuevoContacto: Contact = {
+          id: contactId,
+          nombre: action.nombre || `+${action.from}`,
+          telefono: action.from,
+          canal: "whatsapp",
+        };
+        contacts = [nuevoContacto, ...state.contacts];
+        conversationId = `wac-${action.from}`;
+        conversations = [
+          {
+            id: conversationId,
+            canal: "whatsapp",
+            contactId,
+            departamento: "recepcion",
+            estado: "nuevo",
+            noLeidos: 1,
+            ultimoMensajeTs: action.ts,
+          },
+          ...state.conversations,
+        ];
+      }
+
+      const msg: Message = {
+        id: action.waId,
+        conversationId,
+        autor: "paciente",
+        texto: action.texto,
+        ts: action.ts,
+      };
+
+      return { ...state, contacts, conversations, messages: [...state.messages, msg] };
     }
     default:
       return state;
