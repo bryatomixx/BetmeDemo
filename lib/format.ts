@@ -1,26 +1,46 @@
 import { departments, staff } from "./data/seed";
 import type { DepartmentId } from "./data/types";
 
-const HOY = "2026-06-23";
-const AYER = "2026-06-22";
-
 const MESES = [
   "ene", "feb", "mar", "abr", "may", "jun",
   "jul", "ago", "sep", "oct", "nov", "dic",
 ];
 
-// "2026-06-23T09:42:00" -> "9:42"
+const TZ = "America/El_Salvador";
+
+// Los mensajes reales de WhatsApp llegan en UTC (ISO con 'Z'); los del seed del
+// demo vienen sin zona. Convertimos los reales a hora local de El Salvador.
+function esUTC(ts: string): boolean {
+  return ts.endsWith("Z");
+}
+
+// "2026-06-25T22:36:00Z" -> "16:36" (hora local SV). Seed sin Z -> tal cual.
 export function horaDe(ts: string): string {
+  if (esUTC(ts)) {
+    return new Date(ts).toLocaleTimeString("es-ES", {
+      timeZone: TZ,
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  }
   const hhmm = ts.slice(11, 16);
   const [h, m] = hhmm.split(":");
   return `${Number(h)}:${m}`;
 }
 
-// Etiqueta corta y relativa para listas: "Hoy", "Ayer" o "21 jun".
+function fechaLocal(ts: string): string {
+  if (esUTC(ts)) return new Date(ts).toLocaleDateString("en-CA", { timeZone: TZ });
+  return ts.slice(0, 10);
+}
+
+// Etiqueta corta y relativa para listas: hora si es hoy, "Ayer", o "21 jun".
 export function diaRelativo(ts: string): string {
-  const fecha = ts.slice(0, 10);
-  if (fecha === HOY) return horaDe(ts);
-  if (fecha === AYER) return "Ayer";
+  const fecha = fechaLocal(ts);
+  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+  const ayer = new Date(Date.now() - 86_400_000).toLocaleDateString("en-CA", { timeZone: TZ });
+  if (fecha === hoy) return horaDe(ts);
+  if (fecha === ayer) return "Ayer";
   const [, mes, dia] = fecha.split("-");
   return `${Number(dia)} ${MESES[Number(mes) - 1]}`;
 }
