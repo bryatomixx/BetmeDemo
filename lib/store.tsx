@@ -84,7 +84,9 @@ export function createInitialState(): StoreState {
 export function storeReducer(state: StoreState, action: StoreAction): StoreState {
   switch (action.type) {
     case "SEND_MESSAGE": {
-      const ts = tsFromSeq(state.tsSeq);
+      // Hora real para que la respuesta del staff ordene después del mensaje
+      // real del paciente (que viene con timestamp real de WhatsApp).
+      const ts = new Date().toISOString();
       const msg: Message = {
         id: `nm${state.idSeq}`,
         conversationId: action.conversationId,

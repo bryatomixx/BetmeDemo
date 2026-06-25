@@ -111,12 +111,25 @@ export default function BandejaPage() {
         <section className={cn("min-w-0 flex-1 flex-col", activa ? "flex" : "hidden lg:flex")}>
           {activa && contactoActivo ? (
             <Thread
+              key={activa.id}
               conversation={activa}
               contact={contactoActivo}
               messages={mensajesActivos}
               esMia={activa.asignadoA === ME}
               onBack={() => setActivaId(null)}
               onInfo={() => setCtxOpen(true)}
+              onTyping={() => {
+                if (activa.canal !== "whatsapp") return;
+                const ultimoEntrante = [...mensajesActivos]
+                  .reverse()
+                  .find((m) => m.autor === "paciente");
+                if (!ultimoEntrante) return;
+                fetch("/api/whatsapp/typing", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ messageId: ultimoEntrante.id }),
+                }).catch(() => {});
+              }}
               onSend={(texto) => {
                 dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME });
                 if (activa.canal === "whatsapp" && contactoActivo.telefono) {

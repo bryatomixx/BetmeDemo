@@ -1,16 +1,31 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { SendHorizonal } from "lucide-react";
 
 export function Composer({
   onSend,
+  onTyping,
   placeholder = "Escribe una respuesta...",
 }: {
   onSend: (texto: string) => void;
+  onTyping?: () => void;
   placeholder?: string;
 }) {
   const [texto, setTexto] = useState("");
+  const ultimoTyping = useRef(0);
+
+  function onChange(e: ChangeEvent<HTMLTextAreaElement>) {
+    setTexto(e.target.value);
+    // Dispara "escribiendo..." en WhatsApp, máximo una vez cada 10s.
+    if (e.target.value.trim() && onTyping) {
+      const ahora = Date.now();
+      if (ahora - ultimoTyping.current > 10000) {
+        ultimoTyping.current = ahora;
+        onTyping();
+      }
+    }
+  }
 
   function enviar() {
     const limpio = texto.trim();
@@ -30,7 +45,7 @@ export function Composer({
     <div className="flex items-end gap-2 border-t border-line bg-card px-4 py-3">
       <textarea
         value={texto}
-        onChange={(e) => setTexto(e.target.value)}
+        onChange={onChange}
         onKeyDown={onKey}
         rows={1}
         placeholder={placeholder}

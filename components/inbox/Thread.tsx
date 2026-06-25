@@ -21,6 +21,7 @@ export function Thread({
   onResolver,
   onBack,
   onInfo,
+  onTyping,
 }: {
   conversation: Conversation;
   contact: Contact;
@@ -31,6 +32,7 @@ export function Thread({
   onResolver: () => void;
   onBack?: () => void;
   onInfo?: () => void;
+  onTyping?: () => void;
 }) {
   const finRef = useRef<HTMLDivElement>(null);
   const d = depto(conversation.departamento);
@@ -42,7 +44,7 @@ export function Thread({
   return (
     <div className="flex h-full min-w-0 flex-col bg-surface">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 border-b border-line bg-card px-4 py-3">
+      <div className="flex items-center justify-between gap-6 border-b border-line bg-card px-4 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -115,7 +117,7 @@ export function Thread({
         <div ref={finRef} />
       </div>
 
-      <Composer onSend={onSend} />
+      <Composer onSend={onSend} onTyping={onTyping} />
     </div>
   );
 }
