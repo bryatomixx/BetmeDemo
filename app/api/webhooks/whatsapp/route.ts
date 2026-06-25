@@ -1,8 +1,13 @@
 import crypto from "node:crypto";
+import { after } from "next/server";
 import { addInbound } from "@/lib/wa-store";
+import { programarRespuestaIA } from "@/lib/ai-reply";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// La respuesta de la IA corre en `after` (después de responder 200 a Meta). En
+// Vercel usa waitUntil; subimos el límite para que quepa el debounce + Claude.
+export const maxDuration = 60;
 
 // 1) Verificación: Meta hace un GET al configurar la Callback URL.
 export async function GET(req: Request) {
@@ -53,6 +58,7 @@ export async function POST(req: Request) {
     return new Response("Bad Request", { status: 400 });
   }
 
+  const entrantes: Array<{ from: string; wamid: string }> = [];
   try {
     const entries = (payload as { entry?: unknown[] })?.entry ?? [];
     for (const entry of entries) {
@@ -75,11 +81,21 @@ export async function POST(req: Request) {
             texto: m.text.body,
             ts,
           });
+          entrantes.push({ from: m.from, wamid: m.id });
         }
       }
     }
   } catch {
     // No reventamos: respondemos 200 igual para que Meta no reintente en bucle.
+  }
+
+  // Modo IA: respondemos automáticamente DESPUÉS de devolver 200 a Meta.
+  if (entrantes.length > 0) {
+    after(async () => {
+      await Promise.all(
+        entrantes.map((t) => programarRespuestaIA({ from: t.from, triggerWamid: t.wamid })),
+      );
+    });
   }
 
   return new Response("OK", { status: 200 });

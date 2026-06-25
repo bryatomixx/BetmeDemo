@@ -7,6 +7,7 @@ import { useStore } from "@/lib/store";
 import { ME } from "@/lib/data/seed";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LiveToggle } from "@/components/shell/LiveToggle";
+import { AiModeToggle } from "@/components/shell/AiModeToggle";
 import { InboxFilters, type Filtros } from "@/components/inbox/InboxFilters";
 import { ConversationList, type ListaItem } from "@/components/inbox/ConversationList";
 import { Thread } from "@/components/inbox/Thread";
@@ -92,7 +93,10 @@ export default function BandejaPage() {
             {state.conversations.length} conversaciones · {sinLeerTotal} sin leer
           </p>
         </div>
-        <LiveToggle />
+        <div className="flex items-center gap-2">
+          <AiModeToggle />
+          <LiveToggle />
+        </div>
       </header>
 
       <div className="flex min-h-0 flex-1">
@@ -138,7 +142,7 @@ export default function BandejaPage() {
                   const r = await fetch("/api/whatsapp/send", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ to: contactoActivo.telefono, text: texto }),
+                    body: JSON.stringify({ to: contactoActivo.telefono, text: texto, manual: true }),
                   });
                   const d = await r.json().catch(() => ({ ok: false }));
                   if (!d.ok) {
