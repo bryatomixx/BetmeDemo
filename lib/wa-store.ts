@@ -1,16 +1,18 @@
-// Persistencia de mensajes entrantes de WhatsApp.
+// Persistencia de mensajes de WhatsApp (recibidos y enviados).
 // Si hay Supabase configurado, guarda/lee de la tabla `wa_messages` (persiste,
-// sobrevive reinicios, sirve desplegado). Si no, cae a un store EN MEMORIA
-// (prueba local, se pierde al reiniciar). El resto del flujo no cambia.
+// sobrevive reinicios, sirve desplegado). Si no, cae a un store EN MEMORIA.
 import { getSupabase } from "./supabase";
+
+export type Direccion = "in" | "out"; // in = del paciente, out = del hospital
 
 export interface WaInbound {
   seq: number; // cursor monotónico (id de la fila, o contador en memoria)
   waId: string; // id del mensaje en WhatsApp (dedup)
-  from: string; // número del paciente (wa_id)
+  from: string; // número del paciente (clave de la conversación)
   nombre?: string;
   texto: string;
   ts: string; // ISO 8601
+  direccion: Direccion;
 }
 
 // Fallback en memoria.
@@ -18,7 +20,7 @@ const mem: WaInbound[] = [];
 let memSeq = 0;
 const MAX = 500;
 
-export async function addInbound(m: Omit<WaInbound, "seq">): Promise<void> {
+async function guardar(m: Omit<WaInbound, "seq">): Promise<void> {
   const sb = getSupabase();
   if (sb) {
     const { error } = await sb.from("wa_messages").upsert(
@@ -28,6 +30,7 @@ export async function addInbound(m: Omit<WaInbound, "seq">): Promise<void> {
         nombre: m.nombre ?? null,
         texto: m.texto,
         ts: m.ts,
+        direccion: m.direccion,
       },
       { onConflict: "wa_id", ignoreDuplicates: true },
     );
@@ -39,13 +42,36 @@ export async function addInbound(m: Omit<WaInbound, "seq">): Promise<void> {
   if (mem.length > MAX) mem.splice(0, mem.length - MAX);
 }
 
+// Mensaje recibido del paciente.
+export async function addInbound(
+  m: Omit<WaInbound, "seq" | "direccion">,
+): Promise<void> {
+  return guardar({ ...m, direccion: "in" });
+}
+
+// Mensaje que el hospital envió al paciente (para que persista la conversación).
+export async function addOutbound(m: {
+  waId: string;
+  to: string; // número del paciente (clave de la conversación)
+  texto: string;
+  ts: string;
+}): Promise<void> {
+  return guardar({
+    waId: m.waId,
+    from: m.to,
+    texto: m.texto,
+    ts: m.ts,
+    direccion: "out",
+  });
+}
+
 // Devuelve los mensajes con cursor (seq/id) mayor al del cliente.
 export async function getSince(after: number): Promise<WaInbound[]> {
   const sb = getSupabase();
   if (sb) {
     const { data, error } = await sb
       .from("wa_messages")
-      .select("id, wa_id, wa_from, nombre, texto, ts")
+      .select("id, wa_id, wa_from, nombre, texto, ts, direccion")
       .gt("id", after)
       .order("id", { ascending: true })
       .limit(100);
@@ -60,6 +86,7 @@ export async function getSince(after: number): Promise<WaInbound[]> {
       nombre: (r.nombre as string | null) ?? undefined,
       texto: r.texto as string,
       ts: r.ts as string,
+      direccion: ((r.direccion as string | null) ?? "in") as Direccion,
     }));
   }
   return mem.filter((m) => m.seq > after);

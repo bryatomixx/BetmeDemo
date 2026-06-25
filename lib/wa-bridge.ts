@@ -11,6 +11,7 @@ interface WaInboundDTO {
   nombre?: string;
   texto: string;
   ts: string;
+  direccion?: "in" | "out";
 }
 
 // Puente: sondea el webhook server-side y mete los mensajes reales de WhatsApp
@@ -35,6 +36,7 @@ export function useWhatsappBridge(dispatch: Dispatch<StoreAction>) {
             nombre: m.nombre,
             texto: m.texto,
             ts: m.ts,
+            direccion: m.direccion,
           });
           if (m.seq > cursor.current) cursor.current = m.seq;
         }

@@ -130,20 +130,31 @@ export default function BandejaPage() {
                   body: JSON.stringify({ messageId: ultimoEntrante.id }),
                 }).catch(() => {});
               }}
-              onSend={(texto) => {
-                dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME });
+              onSend={async (texto) => {
+                // WhatsApp: enviamos primero por la Cloud API; si sale bien,
+                // agregamos el mensaje con el id real (así no se duplica con lo
+                // que el webhook persiste) y el endpoint lo guarda en la base.
                 if (activa.canal === "whatsapp" && contactoActivo.telefono) {
-                  fetch("/api/whatsapp/send", {
+                  const r = await fetch("/api/whatsapp/send", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ to: contactoActivo.telefono, text: texto }),
-                  })
-                    .then((r) => r.json())
-                    .then((d) => {
-                      if (!d.ok) console.error("WhatsApp send falló:", d.error);
-                    })
-                    .catch((e) => console.error("WhatsApp send error:", e));
+                  });
+                  const d = await r.json().catch(() => ({ ok: false }));
+                  if (!d.ok) {
+                    console.error("WhatsApp send falló:", d.error);
+                    throw new Error(d.error ?? "Falló el envío");
+                  }
+                  dispatch({
+                    type: "SEND_MESSAGE",
+                    conversationId: activa.id,
+                    texto,
+                    staffId: ME,
+                    waId: d.id,
+                  });
+                  return;
                 }
+                dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME });
               }}
               onAsignarme={() =>
                 dispatch({ type: "ASSIGN", conversationId: activa.id, staffId: ME })

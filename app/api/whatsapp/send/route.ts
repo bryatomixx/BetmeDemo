@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { addOutbound } from "@/lib/wa-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,5 +52,11 @@ export async function POST(req: Request) {
   }
 
   const id = (data as { messages?: Array<{ id?: string }> })?.messages?.[0]?.id;
+
+  // Persistimos el mensaje saliente para que la conversación sobreviva al recargar.
+  if (id) {
+    await addOutbound({ waId: id, to, texto: text, ts: new Date().toISOString() });
+  }
+
   return NextResponse.json({ ok: true, id });
 }

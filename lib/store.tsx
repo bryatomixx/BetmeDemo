@@ -34,7 +34,7 @@ export interface StoreState {
 }
 
 export type StoreAction =
-  | { type: "SEND_MESSAGE"; conversationId: string; texto: string; staffId: string }
+  | { type: "SEND_MESSAGE"; conversationId: string; texto: string; staffId: string; waId?: string }
   | { type: "ASSIGN"; conversationId: string; staffId: string }
   | { type: "SET_STATUS"; conversationId: string; estado: ConversationStatus }
   | { type: "SET_DEPARTMENT"; conversationId: string; departamento: Conversation["departamento"] }
@@ -49,6 +49,7 @@ export type StoreAction =
       nombre?: string;
       texto: string;
       ts: string;
+      direccion?: "in" | "out";
     };
 
 function pad(n: number): string {
@@ -88,7 +89,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
       // real del paciente (que viene con timestamp real de WhatsApp).
       const ts = new Date().toISOString();
       const msg: Message = {
-        id: `nm${state.idSeq}`,
+        id: action.waId ?? `nm${state.idSeq}`,
         conversationId: action.conversationId,
         autor: "staff",
         staffId: action.staffId,
@@ -199,6 +200,8 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
       // Dedup: si ya procesamos este id de WhatsApp, no hacemos nada.
       if (state.messages.some((m) => m.id === action.waId)) return state;
 
+      const esEntrante = action.direccion !== "out"; // out = lo envió el hospital
+
       const existente = state.contacts.find(
         (c) => c.canal === "whatsapp" && c.telefono === action.from,
       );
@@ -218,7 +221,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
               ? {
                   ...c,
                   ultimoMensajeTs: action.ts,
-                  noLeidos: c.noLeidos + 1,
+                  noLeidos: esEntrante ? c.noLeidos + 1 : c.noLeidos,
                   estado: c.estado === "resuelto" ? "en_progreso" : c.estado,
                 }
               : c,
@@ -232,7 +235,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
               contactId: existente.id,
               departamento: "recepcion",
               estado: "nuevo",
-              noLeidos: 1,
+              noLeidos: esEntrante ? 1 : 0,
               ultimoMensajeTs: action.ts,
             },
             ...state.conversations,
@@ -255,7 +258,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
             contactId,
             departamento: "recepcion",
             estado: "nuevo",
-            noLeidos: 1,
+            noLeidos: esEntrante ? 1 : 0,
             ultimoMensajeTs: action.ts,
           },
           ...state.conversations,
@@ -265,7 +268,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
       const msg: Message = {
         id: action.waId,
         conversationId,
-        autor: "paciente",
+        autor: esEntrante ? "paciente" : "staff",
         texto: action.texto,
         ts: action.ts,
       };

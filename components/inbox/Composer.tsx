@@ -8,11 +8,12 @@ export function Composer({
   onTyping,
   placeholder = "Escribe una respuesta...",
 }: {
-  onSend: (texto: string) => void;
+  onSend: (texto: string) => void | Promise<void>;
   onTyping?: () => void;
   placeholder?: string;
 }) {
   const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
   const ultimoTyping = useRef(0);
 
   function onChange(e: ChangeEvent<HTMLTextAreaElement>) {
@@ -27,11 +28,18 @@ export function Composer({
     }
   }
 
-  function enviar() {
+  async function enviar() {
     const limpio = texto.trim();
-    if (!limpio) return;
-    onSend(limpio);
-    setTexto("");
+    if (!limpio || enviando) return;
+    setEnviando(true);
+    try {
+      await onSend(limpio);
+      setTexto(""); // solo limpia si se envió bien
+    } catch {
+      // dejó el texto para reintentar
+    } finally {
+      setEnviando(false);
+    }
   }
 
   function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -54,7 +62,7 @@ export function Composer({
       <button
         type="button"
         onClick={enviar}
-        disabled={!texto.trim()}
+        disabled={!texto.trim() || enviando}
         aria-label="Enviar"
         className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-brand text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-40"
       >

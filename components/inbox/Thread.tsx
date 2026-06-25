@@ -27,7 +27,7 @@ export function Thread({
   contact: Contact;
   messages: Message[];
   esMia: boolean;
-  onSend: (texto: string) => void;
+  onSend: (texto: string) => void | Promise<void>;
   onAsignarme: () => void;
   onResolver: () => void;
   onBack?: () => void;
