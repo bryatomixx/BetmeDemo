@@ -65,11 +65,10 @@ export function tsFromSeq(seq: number): string {
 
 export function createInitialState(): StoreState {
   return {
-    conversations: fakeProvider.listConversations(),
-    messages: fakeProvider
-      .listConversations()
-      .flatMap((c) => fakeProvider.getMessages(c.id)),
-    contacts: fakeProvider.listContacts(),
+    // Bandeja arranca vacía: solo se llena con conversaciones reales de WhatsApp.
+    conversations: [],
+    messages: [],
+    contacts: [],
     internalChannels: fakeProvider.listInternalChannels(),
     internalMessages: fakeProvider
       .listInternalChannels()

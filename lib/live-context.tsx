@@ -10,7 +10,9 @@ interface LiveContextValue {
 const LiveContext = createContext<LiveContextValue | null>(null);
 
 export function LiveProvider({ children }: { children: ReactNode }) {
-  const [enabled, setEnabled] = useState(true);
+  // Apagado por defecto: el demo ya no inyecta mensajes simulados, solo entran
+  // los reales de WhatsApp. El usuario puede encenderlo con el toggle si quiere.
+  const [enabled, setEnabled] = useState(false);
   return (
     <LiveContext.Provider value={{ enabled, toggle: () => setEnabled((v) => !v) }}>
       {children}

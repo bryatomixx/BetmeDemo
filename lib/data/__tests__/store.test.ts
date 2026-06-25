@@ -1,8 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, storeReducer, type StoreState } from "../../store";
+import { contacts, conversations, messages } from "../seed";
 
+// La bandeja real arranca vacía (createInitialState), así que para probar el
+// reducer sembramos un estado con las conversaciones del seed.
 function freshState(): StoreState {
-  return createInitialState();
+  const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+  return {
+    ...createInitialState(),
+    conversations: clone(conversations),
+    messages: clone(messages),
+    contacts: clone(contacts),
+  };
 }
 
 function conv(state: StoreState, id: string) {
