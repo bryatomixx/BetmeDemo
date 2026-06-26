@@ -1,12 +1,44 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Smile } from "lucide-react";
+import { FileText, Smile } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { horaDe, nombreStaff } from "@/lib/format";
-import type { Message } from "@/lib/data/types";
+import type { Message, MessageMedia } from "@/lib/data/types";
 
 const EMOJIS = ["👍", "❤️", "🙏", "😊", "😮"];
+
+// Reproduce/muestra el archivo recibido. El src va al proxy server-side que lo
+// baja de Meta con el token (el navegador no puede usar el token directo).
+function MediaContenido({ media }: { media: MessageMedia }) {
+  const src = `/api/whatsapp/media/${media.id}`;
+  if (media.tipo === "audio") {
+    return <audio controls preload="none" src={src} className="w-[230px] max-w-full" />;
+  }
+  if (media.tipo === "video") {
+    return <video controls preload="none" src={src} className="max-h-64 max-w-full rounded-lg" />;
+  }
+  if (media.tipo === "image" || media.tipo === "sticker") {
+    return (
+      <a href={src} target="_blank" rel="noreferrer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt="Adjunto" className="max-h-64 max-w-full rounded-lg" />
+      </a>
+    );
+  }
+  // documento (PDF u otro)
+  return (
+    <a
+      href={src}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-2 font-medium text-brand underline"
+    >
+      <FileText size={16} className="shrink-0" />
+      {media.filename || "Abrir documento"}
+    </a>
+  );
+}
 
 export function MessageBubble({
   message,
@@ -60,7 +92,7 @@ export function MessageBubble({
             reaccion && !esStaff && "mb-3",
           )}
         >
-          {message.texto}
+          {message.media ? <MediaContenido media={message.media} /> : message.texto}
         </div>
 
         {/* Boton de reaccionar (solo mensajes del paciente) */}

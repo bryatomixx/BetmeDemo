@@ -5,6 +5,13 @@ import { getSupabase } from "./supabase";
 
 export type Direccion = "in" | "out"; // in = del paciente, out = del hospital
 
+export interface WaMedia {
+  id: string; // media_id de Meta (para descargar el archivo por el proxy)
+  tipo: string; // image | document | audio | sticker | video
+  mime?: string;
+  filename?: string;
+}
+
 export interface WaInbound {
   seq: number; // cursor monotónico (id de la fila, o contador en memoria)
   waId: string; // id del mensaje en WhatsApp (dedup)
@@ -13,6 +20,7 @@ export interface WaInbound {
   texto: string;
   ts: string; // ISO 8601
   direccion: Direccion;
+  media?: WaMedia;
 }
 
 // Fallback en memoria.
@@ -31,6 +39,10 @@ async function guardar(m: Omit<WaInbound, "seq">): Promise<void> {
         texto: m.texto,
         ts: m.ts,
         direccion: m.direccion,
+        media_id: m.media?.id ?? null,
+        media_tipo: m.media?.tipo ?? null,
+        media_mime: m.media?.mime ?? null,
+        media_filename: m.media?.filename ?? null,
       },
       { onConflict: "wa_id", ignoreDuplicates: true },
     );
@@ -71,7 +83,9 @@ export async function getSince(after: number): Promise<WaInbound[]> {
   if (sb) {
     const { data, error } = await sb
       .from("wa_messages")
-      .select("id, wa_id, wa_from, nombre, texto, ts, direccion")
+      .select(
+        "id, wa_id, wa_from, nombre, texto, ts, direccion, media_id, media_tipo, media_mime, media_filename",
+      )
       .gt("id", after)
       .order("id", { ascending: true })
       .limit(100);
@@ -87,6 +101,14 @@ export async function getSince(after: number): Promise<WaInbound[]> {
       texto: r.texto as string,
       ts: r.ts as string,
       direccion: ((r.direccion as string | null) ?? "in") as Direccion,
+      media: r.media_id
+        ? {
+            id: r.media_id as string,
+            tipo: (r.media_tipo as string | null) ?? "document",
+            mime: (r.media_mime as string | null) ?? undefined,
+            filename: (r.media_filename as string | null) ?? undefined,
+          }
+        : undefined,
     }));
   }
   return mem.filter((m) => m.seq > after);

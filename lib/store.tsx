@@ -51,6 +51,7 @@ export type StoreAction =
       texto: string;
       ts: string;
       direccion?: "in" | "out";
+      media?: Message["media"];
     }
   | {
       // Rehidrata asignado/estado/departamento de la BD al montar.
@@ -281,6 +282,7 @@ export function storeReducer(state: StoreState, action: StoreAction): StoreState
         autor: esEntrante ? "paciente" : "staff",
         texto: action.texto,
         ts: action.ts,
+        media: action.media,
       };
 
       return { ...state, contacts, conversations, messages: [...state.messages, msg] };

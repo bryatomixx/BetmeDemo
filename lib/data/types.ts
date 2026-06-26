@@ -39,6 +39,13 @@ export interface Contact {
   notas?: string;
 }
 
+export interface MessageMedia {
+  id: string; // media_id de Meta (se baja por /api/whatsapp/media/<id>)
+  tipo: string; // image | document | audio | sticker | video
+  mime?: string;
+  filename?: string;
+}
+
 export interface Message {
   id: string;
   conversationId: string;
@@ -46,6 +53,7 @@ export interface Message {
   staffId?: string;
   texto: string;
   ts: string; // ISO 8601
+  media?: MessageMedia;
 }
 
 export interface Conversation {

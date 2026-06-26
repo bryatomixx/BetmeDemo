@@ -12,6 +12,7 @@ interface WaInboundDTO {
   texto: string;
   ts: string;
   direccion?: "in" | "out";
+  media?: { id: string; tipo: string; mime?: string; filename?: string };
 }
 
 interface ConversacionDTO {
@@ -68,6 +69,7 @@ export function useWhatsappBridge(dispatch: Dispatch<StoreAction>) {
             texto: m.texto,
             ts: m.ts,
             direccion: m.direccion,
+            media: m.media,
           });
           if (m.seq > cursor.current) cursor.current = m.seq;
         }

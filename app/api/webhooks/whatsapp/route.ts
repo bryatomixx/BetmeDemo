@@ -118,6 +118,15 @@ export async function POST(req: Request) {
             nombre: nombrePorWaId.get(m.from) || undefined,
             texto,
             ts,
+            media:
+              adjunto && adjunto.media?.id
+                ? {
+                    id: adjunto.media.id,
+                    tipo: adjunto.tipo,
+                    mime: adjunto.media.mime_type,
+                    filename: adjunto.media.filename,
+                  }
+                : undefined,
           });
 
           if (adjunto) {
