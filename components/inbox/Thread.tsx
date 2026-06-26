@@ -9,6 +9,7 @@ import { ChannelBadge } from "@/components/ui/ChannelBadge";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { MessageBubble } from "./MessageBubble";
 import { Composer } from "./Composer";
+import { ConversationAiToggle } from "./ConversationAiToggle";
 import type { Contact, Conversation, Message } from "@/lib/data/types";
 
 export function Thread({
@@ -24,6 +25,7 @@ export function Thread({
   onTyping,
   onReact,
   onAttach,
+  aiRefresh,
 }: {
   conversation: Conversation;
   contact: Contact;
@@ -37,6 +39,7 @@ export function Thread({
   onTyping?: () => void;
   onReact?: (messageId: string, emoji: string) => void;
   onAttach?: (file: File) => void | Promise<void>;
+  aiRefresh?: number;
 }) {
   const finRef = useRef<HTMLDivElement>(null);
   const d = depto(conversation.departamento);
@@ -72,6 +75,11 @@ export function Thread({
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <ConversationAiToggle
+            from={contact.telefono}
+            visible={conversation.canal === "whatsapp"}
+            refreshKey={aiRefresh}
+          />
           <span className="hidden sm:inline-flex">
             <StatusPill estado={conversation.estado} />
           </span>

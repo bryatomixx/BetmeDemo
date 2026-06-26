@@ -56,3 +56,14 @@ export async function pauseConvo(from: string): Promise<void> {
     .upsert({ wa_from: from }, { onConflict: "wa_from", ignoreDuplicates: true });
   if (error) console.error("ai_paused upsert:", error.message);
 }
+
+// Reactiva la IA para una conversacion (quita la pausa).
+export async function unpauseConvo(from: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) {
+    memPaused.delete(from);
+    return;
+  }
+  const { error } = await sb.from("ai_paused").delete().eq("wa_from", from);
+  if (error) console.error("ai_paused delete:", error.message);
+}

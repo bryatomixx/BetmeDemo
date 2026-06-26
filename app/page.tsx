@@ -39,6 +39,7 @@ export default function BandejaPage() {
   const [filtros, setFiltros] = useState<Filtros>(FILTROS_INICIALES);
   const [activaId, setActivaId] = useState<string | null>(null);
   const [ctxOpen, setCtxOpen] = useState(false); // panel de contexto en movil
+  const [aiRefresh, setAiRefresh] = useState(0); // refresca el toggle de IA por chat
 
   const contactoDe = useMemo(
     () => new Map(state.contacts.map((c) => [c.id, c])),
@@ -130,6 +131,7 @@ export default function BandejaPage() {
             <Thread
               key={activa.id}
               conversation={activa}
+              aiRefresh={aiRefresh}
               contact={contactoActivo}
               messages={mensajesActivos}
               esMia={activa.asignadoA === ME}
@@ -169,6 +171,8 @@ export default function BandejaPage() {
                     staffId: ME,
                     waId: d.id,
                   });
+                  // El envio manual pausa la IA en este chat: refresca el toggle.
+                  setAiRefresh((n) => n + 1);
                   return;
                 }
                 dispatch({ type: "SEND_MESSAGE", conversationId: activa.id, texto, staffId: ME });
