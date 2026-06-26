@@ -7,11 +7,12 @@ import { generarRespuesta, type TurnoIA } from "./ai";
 import { enviarTextoWa, mostrarEscribiendo, enviarReaccion } from "./wa-send";
 
 // Espera ALEATORIA antes de responder, para que se sienta humano (a veces
-// contesta rapido, a veces se tarda). Default 3-5s para que QUEPA en el limite de
-// 10s de Vercel Hobby (espera + Claude + envio). Para el rango completo 3-9s sube
-// AI_DELAY_MAX_MS a 9000 con Vercel Pro (funciones de 60s).
-const DELAY_MIN_MS = Number(process.env.AI_DELAY_MIN_MS) || 3000;
-const DELAY_MAX_MS = Number(process.env.AI_DELAY_MAX_MS) || 5000;
+// contesta rapido, a veces se tarda). Default 2-3s para que TODO el trabajo de
+// `after` (espera + consultas + Claude + envio) quepa en el limite de 10s de
+// Vercel Hobby. Para el rango completo 3-9s sube AI_DELAY_MIN_MS/MAX_MS con
+// Vercel Pro (funciones de 60s).
+const DELAY_MIN_MS = Number(process.env.AI_DELAY_MIN_MS) || 2000;
+const DELAY_MAX_MS = Number(process.env.AI_DELAY_MAX_MS) || 3000;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -38,12 +39,11 @@ export async function programarRespuestaIA(opts: {
     const conv = (await getSince(0))
       .filter((m) => m.from === opts.from)
       .sort((a, b) => a.seq - b.seq);
+    // Si el ultimo mensaje ya no es mi disparador (llego otro o ya hay respuesta),
+    // me retiro. Esto tambien cubre que un humano haya tomado el chat (su mensaje
+    // saliente seria el ultimo, con direccion "out").
     const ultimo = conv.at(-1);
     if (!ultimo || ultimo.waId !== opts.triggerWamid || ultimo.direccion !== "in") return;
-
-    // Reconfirmar estado tras la espera (pudo apagarse o tomarlo un humano).
-    if (!(await getAiEnabled())) return;
-    if (await isPaused(opts.from)) return;
 
     const historial: TurnoIA[] = conv.map((m) => ({
       autor: m.direccion === "out" ? "staff" : "paciente",
