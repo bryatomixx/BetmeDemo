@@ -29,6 +29,7 @@ function fmtDuracion(seg: number): string {
 function fmtHora(iso?: string): string {
   if (!iso) return "";
   return new Date(iso).toLocaleString("es-SV", {
+    timeZone: "America/El_Salvador",
     day: "2-digit",
     month: "short",
     hour: "2-digit",

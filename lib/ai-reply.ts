@@ -8,8 +8,9 @@ import { enviarTextoWa, mostrarEscribiendo, enviarReaccion } from "./wa-send";
 
 // Cuánto silencio esperar tras el último mensaje antes de responder.
 // OJO en Vercel: el trabajo de `after` está limitado por maxDuration (10s en el
-// plan Hobby). 5s + la llamada a Claude debe caber ahí; en Pro hay más margen.
-const DEBOUNCE_MS = Number(process.env.AI_DEBOUNCE_MS) || 5000;
+// plan Hobby). El debounce + la(s) llamada(s) a Claude deben caber ahí. Por eso
+// el default es corto; súbelo con AI_DEBOUNCE_MS si estás en Pro (60s).
+const DEBOUNCE_MS = Number(process.env.AI_DEBOUNCE_MS) || 3000;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
