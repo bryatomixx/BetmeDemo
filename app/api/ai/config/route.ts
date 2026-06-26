@@ -11,7 +11,7 @@ export async function GET() {
     enabled: await getAiEnabled(),
     hasKey: Boolean(process.env.ANTHROPIC_API_KEY),
     hasWaToken: Boolean(process.env.WHATSAPP_ACCESS_TOKEN),
-    model: process.env.AI_MODEL || "claude-sonnet-4-6",
+    model: process.env.AI_MODEL || "claude-haiku-4-5",
   });
 }
 

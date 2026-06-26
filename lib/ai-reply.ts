@@ -7,12 +7,11 @@ import { generarRespuesta, type TurnoIA } from "./ai";
 import { enviarTextoWa, mostrarEscribiendo, enviarReaccion } from "./wa-send";
 
 // Espera ALEATORIA antes de responder, para que se sienta humano (a veces
-// contesta rapido, a veces se tarda). Por defecto entre 3s y 9s.
-// OJO Vercel: el trabajo de `after` esta limitado por maxDuration (10s en Hobby,
-// 60s en Pro). La espera + la llamada a Claude debe caber ahi. Con el rango 3-9s
-// necesitas Vercel Pro; en Hobby baja AI_DELAY_MAX_MS a ~5000.
+// contesta rapido, a veces se tarda). Default 3-5s para que QUEPA en el limite de
+// 10s de Vercel Hobby (espera + Claude + envio). Para el rango completo 3-9s sube
+// AI_DELAY_MAX_MS a 9000 con Vercel Pro (funciones de 60s).
 const DELAY_MIN_MS = Number(process.env.AI_DELAY_MIN_MS) || 3000;
-const DELAY_MAX_MS = Number(process.env.AI_DELAY_MAX_MS) || 9000;
+const DELAY_MAX_MS = Number(process.env.AI_DELAY_MAX_MS) || 5000;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

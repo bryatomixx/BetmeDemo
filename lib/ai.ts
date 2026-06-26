@@ -2,9 +2,9 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Modelo. Sonnet 4.6 es el punto medio (mas rapido que Opus, mitad de precio).
-// Cambia con AI_MODEL: "claude-haiku-4-5" (mas rapido/barato) u "claude-opus-4-8".
-const MODEL = process.env.AI_MODEL || "claude-sonnet-4-6";
+// Modelo. Haiku 4.5 es el mas rapido y barato (ideal para Vercel Hobby, donde la
+// funcion topa a 10s). Cambia con AI_MODEL: "claude-sonnet-4-6" u "claude-opus-4-8".
+const MODEL = process.env.AI_MODEL || "claude-haiku-4-5";
 
 export const SYSTEM_PROMPT = `Eres "Sofía", la asistente virtual de recepción del Hospital Centro Ginecológico (CEGISA) en El Salvador. Atiendes a pacientes por WhatsApp. El lema del hospital es "Somos parte de tu vida".
 
