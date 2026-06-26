@@ -11,12 +11,38 @@ export interface RoleDef {
   ve: ModuleId[];
 }
 
+// Cada rol ve solo sus modulos. Recepcion y Medico atienden pacientes (bandeja),
+// pero NO ven redes ni metricas. Marketing ve redes y dashboard, pero NO la
+// bandeja de pacientes (privacidad). Direccion ve todo.
 export const ROLES: Record<RoleId, RoleDef> = {
   recepcion: { id: "recepcion", nombre: "Recepción", ve: ["bandeja", "interno"] },
+  marketing: { id: "marketing", nombre: "Marketing", ve: ["redes", "dashboard", "interno"] },
   medico: { id: "medico", nombre: "Médico", ve: ["bandeja", "interno"] },
   jefe: { id: "jefe", nombre: "Jefe de departamento", ve: ["bandeja", "interno", "dashboard"] },
-  admin: { id: "admin", nombre: "Admin / Marketing", ve: ["bandeja", "interno", "redes", "dashboard"] },
+  admin: { id: "admin", nombre: "Dirección (todo)", ve: ["bandeja", "interno", "redes", "dashboard"] },
 };
+
+// Ruta de cada modulo (para navegar / redirigir).
+export const MODULO_RUTA: Record<ModuleId, string> = {
+  bandeja: "/",
+  interno: "/interno",
+  redes: "/redes",
+  dashboard: "/dashboard",
+};
+
+// Que modulo corresponde a una ruta. null = ruta sin modulo (no se restringe).
+export function moduloDeRuta(pathname: string): ModuleId | null {
+  if (pathname === "/") return "bandeja";
+  if (pathname.startsWith("/interno")) return "interno";
+  if (pathname.startsWith("/redes")) return "redes";
+  if (pathname.startsWith("/dashboard")) return "dashboard";
+  return null;
+}
+
+// Primer modulo que ve un rol (a donde mandarlo si entra a uno que no puede ver).
+export function primerModulo(def: RoleDef): ModuleId {
+  return def.ve[0] ?? "bandeja";
+}
 
 const STORAGE_KEY = "ccg.rol";
 const DEFAULT_ROLE: RoleId = "admin"; // el demo abre mostrando todo
