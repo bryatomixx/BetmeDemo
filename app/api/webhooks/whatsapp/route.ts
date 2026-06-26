@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { after } from "next/server";
 import { addInbound } from "@/lib/wa-store";
+import { addAdjunto } from "@/lib/contacts-store";
 import { programarRespuestaIA } from "@/lib/ai-reply";
 
 export const runtime = "nodejs";
@@ -30,12 +31,24 @@ function firmaValida(raw: string, firma: string | null, secret: string): boolean
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
-interface WaTextMessage {
+interface WaMedia {
+  id?: string;
+  mime_type?: string;
+  caption?: string;
+  filename?: string;
+}
+
+interface WaMessage {
   from: string;
   id: string;
   timestamp?: string;
   type: string;
   text?: { body: string };
+  image?: WaMedia;
+  document?: WaMedia;
+  audio?: WaMedia;
+  sticker?: WaMedia;
+  video?: WaMedia;
 }
 
 // 2) Recepción: Meta hace POST con los mensajes entrantes.
@@ -69,19 +82,61 @@ export async function POST(req: Request) {
         for (const c of (value.contacts as Array<{ wa_id?: string; profile?: { name?: string } }>) ?? []) {
           if (c?.wa_id) nombrePorWaId.set(c.wa_id, c?.profile?.name ?? "");
         }
-        for (const m of (value.messages as WaTextMessage[]) ?? []) {
-          if (m.type !== "text" || !m.text?.body) continue;
+        for (const m of (value.messages as WaMessage[]) ?? []) {
           const ts = m.timestamp
             ? new Date(Number(m.timestamp) * 1000).toISOString()
             : new Date().toISOString();
+
+          // Texto vs archivo. El archivo se guarda como adjunto en la ficha y se
+          // muestra como una marca en el hilo (la IA no puede abrirlo).
+          let texto: string | null = null;
+          let adjunto: { tipo: string; media?: WaMedia } | null = null;
+          if (m.type === "text" && m.text?.body) {
+            texto = m.text.body;
+          } else if (m.type === "image") {
+            texto = m.image?.caption ? `[imagen] ${m.image.caption}` : "[imagen]";
+            adjunto = { tipo: "image", media: m.image };
+          } else if (m.type === "document") {
+            texto = `[documento: ${m.document?.filename ?? "archivo"}]`;
+            adjunto = { tipo: "document", media: m.document };
+          } else if (m.type === "audio") {
+            texto = "[audio]";
+            adjunto = { tipo: "audio", media: m.audio };
+          } else if (m.type === "sticker") {
+            texto = "[sticker]";
+            adjunto = { tipo: "sticker", media: m.sticker };
+          } else if (m.type === "video") {
+            texto = m.video?.caption ? `[video] ${m.video.caption}` : "[video]";
+            adjunto = { tipo: "video", media: m.video };
+          } else {
+            continue; // tipos no soportados aún (ubicación, contactos, etc.)
+          }
+
           await addInbound({
             waId: m.id,
             from: m.from,
             nombre: nombrePorWaId.get(m.from) || undefined,
-            texto: m.text.body,
+            texto,
             ts,
           });
-          entrantes.push({ from: m.from, wamid: m.id });
+
+          if (adjunto) {
+            await addAdjunto({
+              from: m.from,
+              tipo: adjunto.tipo,
+              mediaId: adjunto.media?.id,
+              mime: adjunto.media?.mime_type,
+              filename: adjunto.media?.filename,
+              caption: adjunto.media?.caption,
+              ts,
+            });
+          }
+
+          // Solo el TEXTO dispara a la IA. Imágenes, PDF, audios y stickers los
+          // atiende un humano (la IA no puede verlos ni escucharlos).
+          if (m.type === "text") {
+            entrantes.push({ from: m.from, wamid: m.id });
+          }
         }
       }
     }

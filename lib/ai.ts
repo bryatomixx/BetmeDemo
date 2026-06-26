@@ -47,6 +47,13 @@ HORARIOS DE ATENCIÓN
 - Sábados: 8:00 a.m. a 1:00 p.m.
 - Domingos y feriados: cerrado.
 
+ARCHIVOS QUE TE ENVÍAN
+A veces verás en la conversación marcas como "[imagen]", "[documento: ...]", "[audio]" o "[sticker]". Significa que el paciente envió un archivo que TÚ NO puedes abrir, ver ni escuchar. Nunca inventes su contenido. Si necesitan que alguien lo revise, ofrece transferir con una persona del hospital, que sí podrá verlo.
+
+HERRAMIENTAS
+- guardar_datos_contacto: úsala en cuanto el paciente mencione su nombre completo o su correo, para guardar su ficha. No lo anuncies, solo guárdalo y sigue la conversación.
+- reaccionar: puedes reaccionar al mensaje del paciente con un emoji (👍, ❤️, 🙏) de forma ocasional y cálida. NUNCA envíes stickers.
+
 LÍMITES
 - No des diagnósticos ni consejos médicos. Si preguntan algo clínico, indica que la doctora lo evaluará en la cita y, si es urgente, sugiere transferir con el área correspondiente.
 - Si no sabes un dato, ofrece transferir con una persona del hospital.
@@ -59,23 +66,85 @@ export interface TurnoIA {
   texto: string;
 }
 
-// Genera la respuesta de la IA a partir del historial de la conversación.
-export async function generarRespuesta(historial: TurnoIA[]): Promise<string> {
-  const messages = historial.map((t) => ({
-    role: t.autor === "paciente" ? ("user" as const) : ("assistant" as const),
+interface AccionesIA {
+  onGuardarContacto?: (d: { nombre?: string; correo?: string }) => Promise<void> | void;
+  onReaccionar?: (emoji: string) => Promise<void> | void;
+}
+
+const TOOLS: Anthropic.Tool[] = [
+  {
+    name: "guardar_datos_contacto",
+    description:
+      "Guarda o actualiza la ficha del paciente. Llámala en cuanto el paciente mencione su nombre completo o su correo electrónico, aunque sea a media conversación.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre completo del paciente, si lo dio" },
+        correo: { type: "string", description: "Correo electrónico del paciente, si lo dio" },
+      },
+    },
+  },
+  {
+    name: "reaccionar",
+    description:
+      "Reacciona al último mensaje del paciente con un solo emoji (por ejemplo 👍, ❤️, 🙏). Úsalo con moderación, como complemento cálido; NO reemplaza tu respuesta de texto.",
+    input_schema: {
+      type: "object",
+      properties: { emoji: { type: "string", description: "Un solo emoji" } },
+      required: ["emoji"],
+    },
+  },
+];
+
+// Genera la respuesta de la IA. Usa tool use para guardar datos del contacto y
+// para reaccionar; ejecuta esas acciones vía los callbacks de `acciones`.
+export async function generarRespuesta(
+  historial: TurnoIA[],
+  acciones?: AccionesIA,
+): Promise<string> {
+  const messages: Anthropic.MessageParam[] = historial.map((t) => ({
+    role: t.autor === "paciente" ? "user" : "assistant",
     content: t.texto,
   }));
 
-  const res = await client.messages.create({
-    model: MODEL,
-    max_tokens: 500,
-    system: SYSTEM_PROMPT,
-    messages,
-  });
+  let texto = "";
+  for (let i = 0; i < 4; i++) {
+    const res = await client.messages.create({
+      model: MODEL,
+      max_tokens: 500,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS,
+      messages,
+    });
 
-  const texto = res.content
-    .map((b) => (b.type === "text" ? b.text : ""))
-    .join("")
-    .trim();
+    const t = res.content
+      .map((b) => (b.type === "text" ? b.text : ""))
+      .join("")
+      .trim();
+    if (t) texto = t;
+
+    const toolUses = res.content.filter(
+      (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+    );
+    if (res.stop_reason !== "tool_use" || toolUses.length === 0) break;
+
+    messages.push({ role: "assistant", content: res.content });
+    const resultados: Anthropic.ToolResultBlockParam[] = [];
+    for (const tu of toolUses) {
+      try {
+        if (tu.name === "guardar_datos_contacto") {
+          await acciones?.onGuardarContacto?.(tu.input as { nombre?: string; correo?: string });
+        } else if (tu.name === "reaccionar") {
+          const emoji = (tu.input as { emoji?: string }).emoji;
+          if (emoji) await acciones?.onReaccionar?.(emoji);
+        }
+      } catch (err) {
+        console.error("IA tool error:", err);
+      }
+      resultados.push({ type: "tool_result", tool_use_id: tu.id, content: "Listo." });
+    }
+    messages.push({ role: "user", content: resultados });
+  }
+
   return texto || "Disculpe, ¿me lo puede repetir por favor?";
 }

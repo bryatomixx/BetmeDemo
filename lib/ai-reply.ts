@@ -2,8 +2,9 @@
 // contestar, para que una ráfaga de mensajes del paciente se responda UNA vez.
 import { addOutbound, getSince } from "./wa-store";
 import { getAiEnabled, isPaused } from "./ai-store";
+import { upsertContacto } from "./contacts-store";
 import { generarRespuesta, type TurnoIA } from "./ai";
-import { enviarTextoWa, mostrarEscribiendo } from "./wa-send";
+import { enviarTextoWa, mostrarEscribiendo, enviarReaccion } from "./wa-send";
 
 // Cuánto silencio esperar tras el último mensaje antes de responder.
 // OJO en Vercel: el trabajo de `after` está limitado por maxDuration (10s en el
@@ -45,7 +46,11 @@ export async function programarRespuestaIA(opts: {
     // "escribiendo..." mientras Claude redacta.
     await mostrarEscribiendo(opts.triggerWamid);
 
-    const respuesta = await generarRespuesta(historial);
+    const respuesta = await generarRespuesta(historial, {
+      onGuardarContacto: (d) =>
+        upsertContacto({ from: opts.from, nombre: d.nombre, correo: d.correo }),
+      onReaccionar: (emoji) => enviarReaccion(opts.from, opts.triggerWamid, emoji),
+    });
     const env = await enviarTextoWa(opts.from, respuesta);
     if (env.ok && env.id) {
       await addOutbound({ waId: env.id, to: opts.from, texto: respuesta, ts: new Date().toISOString() });

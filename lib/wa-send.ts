@@ -53,3 +53,21 @@ export async function mostrarEscribiendo(messageId: string): Promise<void> {
     }),
   }).catch(() => {});
 }
+
+// Reacciona a un mensaje del paciente con un emoji.
+export async function enviarReaccion(to: string, messageId: string, emoji: string): Promise<void> {
+  const token = process.env.WHATSAPP_ACCESS_TOKEN;
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  if (!token || !phoneId) return;
+  await fetch(`${GRAPH}/${phoneId}/messages`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "reaction",
+      reaction: { message_id: messageId, emoji },
+    }),
+  }).catch(() => {});
+}
