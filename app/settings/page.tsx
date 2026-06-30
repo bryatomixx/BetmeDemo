@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Loader2, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  FileText,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  Info,
+} from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
@@ -86,8 +95,8 @@ export default function SettingsPage() {
     return txt;
   }, [cuerpo, numVars, ejemplos]);
 
-  async function cargar() {
-    setCargando(true);
+  async function cargar(silencioso = false) {
+    if (!silencioso) setCargando(true);
     setErrorLista(null);
     try {
       const res = await fetch("/api/whatsapp/templates", { cache: "no-store" });
@@ -101,12 +110,21 @@ export default function SettingsPage() {
     } catch {
       setErrorLista("No se pudieron cargar las plantillas.");
     }
-    setCargando(false);
+    if (!silencioso) setCargando(false);
   }
 
   useEffect(() => {
     cargar();
   }, []);
+
+  // Mientras haya plantillas en revisión, refrescamos solos cada 20s para que el
+  // cambio a "Aprobada"/"Rechazada" aparezca sin recargar la página.
+  const hayPendientes = templates.some((t) => t.status === "PENDING");
+  useEffect(() => {
+    if (!hayPendientes) return;
+    const id = setInterval(() => cargar(true), 20000);
+    return () => clearInterval(id);
+  }, [hayPendientes]);
 
   function resetForm() {
     setName("");
@@ -190,6 +208,17 @@ export default function SettingsPage() {
             </p>
           </div>
         )}
+
+        <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-line bg-surface/60 px-3.5 py-2.5 text-[12.5px] text-[#5b6b80]">
+          <Info size={16} className="mt-0.5 shrink-0 text-brand" />
+          <p>
+            <span className="font-semibold text-[#0f1b2d]">Cómo funciona:</span> completa el
+            formulario y crea la plantilla. Se envía a Meta y queda{" "}
+            <span className="font-semibold">En revisión</span>. Cuando Meta la aprueba, el estado
+            cambia a <span className="font-semibold text-[#2f9e2f]">Aprobada</span> y recién ahí se
+            puede usar para enviar. Esta vista se actualiza sola mientras haya plantillas en revisión.
+          </p>
+        </div>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
           {/* Formulario */}
@@ -356,12 +385,25 @@ export default function SettingsPage() {
 
           {/* Lista */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-[#0f1b2d]">
-                Plantillas{" "}
-                <span className="text-[#94a3b4]">({templates.length})</span>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="flex items-center gap-2 text-sm font-bold text-[#0f1b2d]">
+                Plantillas <span className="text-[#94a3b4]">({templates.length})</span>
+                {hayPendientes && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600">
+                    <Loader2 size={11} className="animate-spin" />
+                    actualizando estado…
+                  </span>
+                )}
               </h2>
-              {cargando && <Loader2 size={15} className="animate-spin text-[#94a3b4]" />}
+              <button
+                type="button"
+                onClick={() => cargar()}
+                disabled={cargando}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-card px-2.5 py-1.5 text-[12px] font-semibold text-[#5b6b80] transition hover:bg-surface disabled:opacity-60"
+              >
+                <RefreshCw size={13} className={cn(cargando && "animate-spin")} />
+                Actualizar
+              </button>
             </div>
 
             {errorLista && (
