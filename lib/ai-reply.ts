@@ -71,11 +71,15 @@ export async function programarRespuestaIA(opts: {
     // "escribiendo..." mientras Claude redacta.
     await mostrarEscribiendo(opts.triggerWamid);
 
-    const respuesta = await generarRespuesta(historial, {
-      onGuardarContacto: (d) =>
-        upsertContacto({ from: opts.from, nombre: d.nombre, correo: d.correo }),
-      onReaccionar: (emoji) => enviarReaccion(opts.from, opts.triggerWamid, emoji),
-    });
+    const respuesta = await generarRespuesta(
+      historial,
+      {
+        onGuardarContacto: (d) =>
+          upsertContacto({ from: opts.from, nombre: d.nombre, correo: d.correo }),
+        onReaccionar: (emoji) => enviarReaccion(opts.from, opts.triggerWamid, emoji),
+      },
+      { telefono: opts.from },
+    );
     const env = await enviarTextoWa(opts.from, respuesta);
     if (env.ok && env.id) {
       await addOutbound({ waId: env.id, to: opts.from, texto: respuesta, ts: new Date().toISOString() });

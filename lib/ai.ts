@@ -1,4 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  consultarDisponibilidad,
+  confirmarCita,
+  type InputDisponibilidad,
+  type InputConfirmar,
+} from "./n8n";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -20,13 +26,14 @@ ESTILO
 - 1 a 3 frases por respuesta. Haz UNA pregunta a la vez para no abrumar.
 - No uses guiones largos. Usa emojis con moderación (máximo uno por mensaje).
 
-AGENDAR UNA CITA (sigue este orden, paso a paso)
-1. Pregunta el motivo (consulta ginecológica, control prenatal, ultrasonido, papanicolaou, etc.).
-2. Ofrece 2 opciones de día y hora FUTURAS dentro del horario de atención (usa el CONTEXTO TEMPORAL que se te da; nunca propongas un día u hora que ya pasó).
-3. Pide el nombre completo.
-4. Pide un correo electrónico para enviar la confirmación.
-5. Confirma si este mismo número de WhatsApp sirve para contactarle y recordarle la cita.
-6. Resume y confirma la cita: motivo, día, hora, nombre. Avisa que recibirá confirmación por correo y WhatsApp.
+AGENDAR UNA CITA (con disponibilidad REAL, vía herramientas)
+1. Pregunta el motivo/especialidad (consulta ginecológica, control prenatal, ultrasonido, papanicolaou, etc.).
+2. Pregunta para qué fecha le gustaría (o si prefiere lo más pronto posible; usa el CONTEXTO TEMPORAL para la fecha en formato AAAA-MM-DD).
+3. Llama a "consultar_disponibilidad" con la especialidad y la fecha preferida. Ofrece al paciente SOLO los espacios que devuelva la herramienta. NUNCA inventes horarios.
+4. Pide el nombre completo (y guárdalo con "guardar_datos_contacto").
+5. Cuando el paciente elija un espacio de los ofrecidos, llama a "confirmar_cita" con nombre, especialidad, fecha y hora del espacio elegido.
+6. Cuando "confirmar_cita" devuelva la confirmación, avísale que su cita quedó agendada (menciona día y hora). NO confirmes una cita si la herramienta no respondió correctamente.
+Si una herramienta falla o no hay espacios disponibles, discúlpate y ofrece que una persona del hospital le coordina la cita. NUNCA inventes horarios ni confirmaciones.
 
 TRANSFERIR / CANALIZAR (transferencia SIMULADA)
 Cuando el caso requiera a un área o persona (urgencias, resultados médicos, una doctora específica, facturación, etc.), haz una transferencia SIMULADA: menciona de forma natural que lo canalizas y, en el MISMO mensaje o el siguiente, continúa TÚ MISMA atendiendo como si fueras esa área. No hay otra persona del otro lado: eres tú quien sigue la conversación.
@@ -56,6 +63,8 @@ A veces verás en la conversación marcas como "[imagen]", "[documento: ...]", "
 
 HERRAMIENTAS
 - guardar_datos_contacto: úsala en cuanto el paciente mencione su nombre completo o su correo, para guardar su ficha. No lo anuncies, solo guárdalo y sigue la conversación.
+- consultar_disponibilidad: consulta la agenda real y devuelve los espacios libres. Úsala antes de ofrecer horarios; ofrece SOLO lo que devuelva.
+- confirmar_cita: agenda la cita en un espacio devuelto por consultar_disponibilidad. Úsala solo tras la elección del paciente y con su nombre.
 - reaccionar: puedes reaccionar al mensaje del paciente con un emoji (👍, ❤️, 🙏) de forma ocasional y cálida. NUNCA envíes stickers.
 
 LÍMITES
@@ -95,6 +104,45 @@ const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "consultar_disponibilidad",
+    description:
+      "Consulta los espacios disponibles para agendar. Llámala cuando el paciente quiera agendar y ya tengas la especialidad/motivo y una fecha preferida. Devuelve una lista de espacios libres; ofrece SOLO esos.",
+    input_schema: {
+      type: "object",
+      properties: {
+        especialidad: {
+          type: "string",
+          description: "Especialidad o motivo (ej. Ginecología, Control prenatal, Ultrasonido)",
+        },
+        fecha_preferida: {
+          type: "string",
+          description: "Fecha preferida en formato AAAA-MM-DD (usa el contexto temporal)",
+        },
+        rango_dias: {
+          type: "number",
+          description: "Cuántos días hacia adelante buscar (por defecto 7)",
+        },
+      },
+      required: ["especialidad", "fecha_preferida"],
+    },
+  },
+  {
+    name: "confirmar_cita",
+    description:
+      "Agenda y confirma la cita en un espacio devuelto por consultar_disponibilidad. Llámala SOLO después de que el paciente eligió un espacio y diste su nombre. Devuelve la confirmación.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre completo del paciente" },
+        especialidad: { type: "string", description: "Especialidad o motivo de la cita" },
+        fecha: { type: "string", description: "Fecha del espacio elegido (AAAA-MM-DD)" },
+        hora: { type: "string", description: "Hora del espacio elegido (HH:mm)" },
+        medico: { type: "string", description: "Médico del espacio, si lo indicó la disponibilidad" },
+      },
+      required: ["nombre", "especialidad", "fecha", "hora"],
+    },
+  },
+  {
     name: "reaccionar",
     description:
       "Reacciona al último mensaje del paciente con un solo emoji (por ejemplo 👍, ❤️, 🙏). Úsalo con moderación, como complemento cálido; NO reemplaza tu respuesta de texto.",
@@ -131,6 +179,7 @@ function contextoTemporal(): string {
 export async function generarRespuesta(
   historial: TurnoIA[],
   acciones?: AccionesIA,
+  contexto?: { telefono?: string },
 ): Promise<string> {
   const messages: Anthropic.MessageParam[] = historial.map((t) => ({
     role: t.autor === "paciente" ? "user" : "assistant",
@@ -161,17 +210,27 @@ export async function generarRespuesta(
     messages.push({ role: "assistant", content: res.content });
     const resultados: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
+      let contenido = "Listo.";
       try {
         if (tu.name === "guardar_datos_contacto") {
           await acciones?.onGuardarContacto?.(tu.input as { nombre?: string; correo?: string });
         } else if (tu.name === "reaccionar") {
           const emoji = (tu.input as { emoji?: string }).emoji;
           if (emoji) await acciones?.onReaccionar?.(emoji);
+        } else if (tu.name === "consultar_disponibilidad") {
+          const inp = tu.input as InputDisponibilidad;
+          const r = await consultarDisponibilidad({ ...inp, telefono: contexto?.telefono });
+          contenido = JSON.stringify(r.ok ? r.data : { error: r.error ?? "no disponible" });
+        } else if (tu.name === "confirmar_cita") {
+          const inp = tu.input as InputConfirmar;
+          const r = await confirmarCita({ ...inp, telefono: contexto?.telefono });
+          contenido = JSON.stringify(r.ok ? r.data : { error: r.error ?? "no se pudo agendar" });
         }
       } catch (err) {
         console.error("IA tool error:", err);
+        contenido = JSON.stringify({ error: "fallo la herramienta" });
       }
-      resultados.push({ type: "tool_result", tool_use_id: tu.id, content: "Listo." });
+      resultados.push({ type: "tool_result", tool_use_id: tu.id, content: contenido });
     }
     messages.push({ role: "user", content: resultados });
   }
