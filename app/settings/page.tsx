@@ -386,12 +386,12 @@ export default function SettingsPage() {
           {/* Lista */}
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="flex items-center gap-2 text-sm font-bold text-[#0f1b2d]">
+              <h2 className="flex flex-wrap items-center gap-2 text-sm font-bold text-[#0f1b2d]">
                 Plantillas <span className="text-[#94a3b4]">({templates.length})</span>
                 {hayPendientes && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600">
-                    <Loader2 size={11} className="animate-spin" />
-                    actualizando estado…
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-300/50">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500" />
+                    En revisión por Meta · se actualiza solo
                   </span>
                 )}
               </h2>
