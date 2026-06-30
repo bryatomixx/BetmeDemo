@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { RoleId } from "./data/types";
 
-export type ModuleId = "bandeja" | "interno" | "redes" | "dashboard";
+export type ModuleId = "bandeja" | "interno" | "redes" | "dashboard" | "settings";
 
 export interface RoleDef {
   id: RoleId;
@@ -16,10 +16,10 @@ export interface RoleDef {
 // bandeja de pacientes (privacidad). Direccion ve todo.
 export const ROLES: Record<RoleId, RoleDef> = {
   recepcion: { id: "recepcion", nombre: "Recepción", ve: ["bandeja", "interno"] },
-  marketing: { id: "marketing", nombre: "Marketing", ve: ["redes", "dashboard", "interno"] },
+  marketing: { id: "marketing", nombre: "Marketing", ve: ["redes", "dashboard", "interno", "settings"] },
   medico: { id: "medico", nombre: "Médico", ve: ["bandeja", "interno"] },
   jefe: { id: "jefe", nombre: "Jefe de departamento", ve: ["bandeja", "interno", "dashboard"] },
-  admin: { id: "admin", nombre: "Dirección (todo)", ve: ["bandeja", "interno", "redes", "dashboard"] },
+  admin: { id: "admin", nombre: "Dirección (todo)", ve: ["bandeja", "interno", "redes", "dashboard", "settings"] },
 };
 
 // Ruta de cada modulo (para navegar / redirigir).
@@ -28,6 +28,7 @@ export const MODULO_RUTA: Record<ModuleId, string> = {
   interno: "/interno",
   redes: "/redes",
   dashboard: "/dashboard",
+  settings: "/settings",
 };
 
 // Que modulo corresponde a una ruta. null = ruta sin modulo (no se restringe).
@@ -36,6 +37,7 @@ export function moduloDeRuta(pathname: string): ModuleId | null {
   if (pathname.startsWith("/interno")) return "interno";
   if (pathname.startsWith("/redes")) return "redes";
   if (pathname.startsWith("/dashboard")) return "dashboard";
+  if (pathname.startsWith("/settings")) return "settings";
   return null;
 }
 

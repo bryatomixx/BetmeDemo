@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Inbox, Megaphone, MessagesSquare, X, type LucideIcon } from "lucide-react";
+import { BarChart3, Inbox, Megaphone, MessagesSquare, Settings, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { useRole, type ModuleId } from "@/lib/roles";
 import { staff, ME } from "@/lib/data/seed";
@@ -23,6 +23,7 @@ const NAV: NavItem[] = [
   { id: "interno", href: "/interno", label: "Chat interno", Icon: MessagesSquare },
   { id: "redes", href: "/redes", label: "Redes sociales", Icon: Megaphone },
   { id: "dashboard", href: "/dashboard", label: "Dashboard", Icon: BarChart3 },
+  { id: "settings", href: "/settings", label: "Configuración", Icon: Settings },
 ];
 
 export function Sidebar({
